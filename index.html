@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Sistem Persamaan Linear (SPL)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: #d1d5db;
+        }
+        .matrix-grid {
+            display: grid;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .matrix-input {
+            width: 100%;
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            color: #e5e7eb;
+            text-align: center;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .matrix-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px #1e40af;
+        }
+        .step-matrix {
+            display: inline-block;
+            background-color: #1f2937;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+            font-family: monospace;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+        .step-matrix table {
+            border-collapse: collapse;
+        }
+        .step-matrix td {
+            padding: 0.25rem 0.5rem;
+            text-align: right;
+            min-width: 60px; /* Lebarkan sedikit untuk pecahan */
+        }
+        .step-matrix .separator {
+            border-left: 1px dashed #6b7280;
+            padding-left: 1rem;
+            margin-left: 0.5rem;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-secondary {
+            background-color: #4b5563;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-secondary:hover {
+            background-color: #6b7280;
+        }
+        .radio-label {
+            display: inline-block;
+            background-color: #374151;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            border: 1px solid #4b5563;
+            transition: all 0.2s;
+        }
+        input[type="radio"]:checked + .radio-label {
+            background-color: #2563eb;
+            color: white;
+            border-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white">Kalkulator Sistem Persamaan Linear</h1>
+            <p class="mt-2 text-lg text-gray-400">Pilih ukuran matriks, metode, dan hitung solusinya langkah demi langkah.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <!-- Kolom Kontrol -->
+            <div class="lg:col-span-2 bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold text-white mb-6">Pengaturan</h2>
+                
+                <!-- Pengaturan Ukuran Matriks -->
+                <div class="mb-6">
+                    <label for="matrixSize" class="block text-sm font-medium text-gray-300 mb-2">Ukuran Matriks (n x n)</label>
+                    <select id="matrixSize" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="2">2x2</option>
+                        <option value="3" selected>3x3</option>
+                        <option value="4">4x4</option>
+                        <option value="5">5x5</option>
+                        <option value="6">6x6</option>
+                    </select>
+                </div>
+                
+                <!-- Pilihan Metode -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-medium text-gray-300 mb-3">Pilih Metode Penyelesaian</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input type="radio" name="method" id="gauss" value="gauss" class="hidden" checked>
+                        <label for="gauss" class="radio-label text-center">Gauss</label>
+                        
+                        <input type="radio" name="method" id="gauss-jordan" value="gauss-jordan" class="hidden">
+                        <label for="gauss-jordan" class="radio-label text-center">Gauss-Jordan</label>
+                        
+                        <input type="radio" name="method" id="lu" value="lu" class="hidden">
+                        <label for="lu" class="radio-label text-center">LU</label>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col space-y-3">
+                     <button id="fillRandomBtn" class="w-full py-2.5 px-5 rounded-md font-semibold btn-secondary">Isi Matriks Acak</button>
+                    <button id="calculateBtn" class="w-full py-2.5 px-5 rounded-md font-bold text-lg btn-primary">Hitung</button>
+                    <button id="clearBtn" class="w-full py-2.5 px-5 rounded-md font-semibold btn-secondary bg-red-600 hover:bg-red-700">Bersihkan</button>
+                </div>
+
+                <!-- Input Matriks -->
+                <div id="matrix-container" class="mt-8">
+                    <h3 class="text-xl font-semibold text-white mb-4">Input Matriks [A|b]</h3>
+                    <div id="matrix-input-grid" class="matrix-grid"></div>
+                </div>
+            </div>
+
+            <!-- Kolom Hasil -->
+            <div class="lg:col-span-3 bg-gray-800 p-6 rounded-xl shadow-lg min-h-[400px]">
+                 <h2 class="text-2xl font-semibold text-white mb-2">Hasil dan Langkah-langkah</h2>
+                 <div id="output" class="text-gray-300 mt-4 space-y-4 overflow-x-auto">
+                    <p>Silakan isi matriks dan klik "Hitung" untuk melihat hasilnya di sini.</p>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>Dibuat dengan Tailwind CSS dan JavaScript.</p>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Referensi elemen DOM
+    const sizeSelector = document.getElementById('matrixSize');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const fillRandomBtn = document.getElementById('fillRandomBtn');
+    const matrixGrid = document.getElementById('matrix-input-grid');
+    const outputDiv = document.getElementById('output');
+
+    // Fungsi GCD (Greatest Common Divisor) untuk menyederhanakan pecahan
+    const gcd = (a, b) => {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        while (b) {
+            [a, b] = [b, a % b];
+        }
+        return a;
+    };
+    
+    // Fungsi untuk memformat angka menjadi bentuk pecahan
+    const formatNumber = (num) => {
+        if (Math.abs(num) < 1e-9) return '0';
+        // Cek jika angka sangat dekat dengan integer
+        if (Math.abs(num - Math.round(num)) < 1e-9) {
+            return Math.round(num).toString();
+        }
+
+        let denominator = 1000000; // Presisi hingga 6 angka desimal
+        let numerator = Math.round(num * denominator);
+        
+        const commonDivisor = gcd(numerator, denominator);
+        
+        const finalNumerator = numerator / commonDivisor;
+        const finalDenominator = denominator / commonDivisor;
+
+        if (finalDenominator === 1) {
+            return finalNumerator.toString();
+        }
+        
+        return `${finalNumerator}/${finalDenominator}`;
+    };
+
+    // Fungsi untuk membuat matriks dalam format HTML
+    const formatMatrixHTML = (matrix, message = '') => {
+        let html = `<p class="font-semibold text-blue-300">${message}</p><div class="step-matrix"><table>`;
+        matrix.forEach(row => {
+            html += '<tr>';
+            row.forEach((val, j) => {
+                const isSeparator = matrix[0].length > 1 && j === matrix[0].length - 1 && message.toLowerCase().includes('augmented');
+                html += `<td class="${isSeparator ? 'separator' : ''}">${formatNumber(val)}</td>`;
+            });
+            html += '</tr>';
+        });
+        html += '</table></div>';
+        return html;
+    };
+    
+    // Fungsi untuk membuat matriks L dan U dalam format HTML
+    const formatLUMatricesHTML = (L, U) => {
+        let html = '<div class="flex flex-wrap gap-4">';
+        html += '<div>' + formatMatrixHTML(L, "Matriks L (Lower Triangular)") + '</div>';
+        html += '<div>' + formatMatrixHTML(U, "Matriks U (Upper Triangular)") + '</div>';
+        html += '</div>';
+        return html;
+    };
+    
+    // Fungsi untuk membuat input matriks berdasarkan ukuran yang dipilih
+    const generateMatrixInputs = () => {
+        const size = parseInt(sizeSelector.value);
+        matrixGrid.innerHTML = '';
+        matrixGrid.style.gridTemplateColumns = `repeat(${size + 2}, 1fr)`;
+
+        // Header
+        for (let j = 0; j < size; j++) {
+            matrixGrid.innerHTML += `<div class="text-center font-bold text-gray-400">x${j + 1}</div>`;
+        }
+        matrixGrid.innerHTML += `<div></div><div></div>`; // For separator and b
+
+        // Input rows
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                matrixGrid.innerHTML += `<input type="number" class="matrix-input a-val" data-row="${i}" data-col="${j}" placeholder="A[${i}][${j}]">`;
+            }
+            matrixGrid.innerHTML += `<div class="text-center text-2xl text-gray-500">|</div>`;
+            matrixGrid.innerHTML += `<input type="number" class="matrix-input b-val" data-row="${i}" placeholder="b[${i}]">`;
+        }
+    };
+    
+    // Fungsi untuk membaca nilai dari input matriks
+    const readMatrixInputs = () => {
+        const size = parseInt(sizeSelector.value);
+        const A = Array.from({ length: size }, () => Array(size).fill(0));
+        const b = Array(size).fill(0);
+
+        document.querySelectorAll('.a-val').forEach(input => {
+            const i = parseInt(input.dataset.row);
+            const j = parseInt(input.dataset.col);
+            A[i][j] = parseFloat(input.value) || 0;
+        });
+        document.querySelectorAll('.b-val').forEach(input => {
+            const i = parseInt(input.dataset.row);
+            b[i] = parseFloat(input.value) || 0;
+        });
+        return { A, b };
+    };
+    
+    const fillRandomInputs = () => {
+        document.querySelectorAll('.matrix-input').forEach(input => {
+            input.value = Math.floor(Math.random() * 21) - 10; // Random integer between -10 and 10
+        });
+    };
+
+    // --- LOGIKA PERHITUNGAN METODE ---
+    
+    const solve = () => {
+        const { A, b } = readMatrixInputs();
+        const method = document.querySelector('input[name="method"]:checked').value;
+        outputDiv.innerHTML = `<h3 class="text-xl font-semibold text-white">Metode: ${method.replace('-', ' ').toUpperCase()}</h3>`;
+        
+        // Deep copy untuk menghindari modifikasi asli
+        const A_copy = JSON.parse(JSON.stringify(A));
+        const b_copy = JSON.parse(JSON.stringify(b));
+
+        try {
+            let result;
+            if (method === 'gauss') {
+                result = gaussElimination(A_copy, b_copy);
+            } else if (method === 'gauss-jordan') {
+                result = gaussJordanElimination(A_copy, b_copy);
+            } else if (method === 'lu') {
+                result = luDecomposition(A_copy, b_copy);
+            }
+            
+            outputDiv.innerHTML += result.steps;
+            
+            let solutionHTML = '<h3 class="text-xl font-semibold text-green-400 mt-6">Solusi Akhir:</h3><div class="mt-2 text-lg space-y-1">';
+            if (result.solution) {
+                 result.solution.forEach((val, i) => {
+                    solutionHTML += `<div><span class="font-mono bg-gray-700 px-2 py-1 rounded">x${i+1}</span> = <span class="font-bold text-white">${formatNumber(val)}</span></div>`;
+                });
+            } else {
+                 solutionHTML += `<p class="text-yellow-400">${result.message || 'Tidak ditemukan solusi unik.'}</p>`;
+            }
+            solutionHTML += '</div>';
+            outputDiv.innerHTML += solutionHTML;
+
+        } catch (error) {
+            outputDiv.innerHTML += `<p class="text-red-400 font-bold mt-4">Error: ${error.message}</p>`;
+        }
+    };
+    
+    // 1. Eliminasi Gauss
+    const gaussElimination = (A, b) => {
+        const n = A.length;
+        let steps = '';
+        const aug = A.map((row, i) => [...row, b[i]]);
+        steps += formatMatrixHTML(aug, "Matriks Augmented Awal [A|b]");
+
+        // Eliminasi Maju
+        for (let k = 0; k < n; k++) {
+            // Pivoting
+            let max_row = k;
+            for (let i = k + 1; i < n; i++) {
+                if (Math.abs(aug[i][k]) > Math.abs(aug[max_row][k])) {
+                    max_row = i;
+                }
+            }
+            [aug[k], aug[max_row]] = [aug[max_row], aug[k]];
+             if (max_row !== k) {
+                steps += `<p class="text-yellow-300">Pivoting: Tukar Baris R${k+1} dan R${max_row+1}</p>`;
+                steps += formatMatrixHTML(aug, "Setelah Pivoting");
+            }
+
+            if (Math.abs(aug[k][k]) < 1e-9) {
+                 return { solution: null, steps, message: "Matriks singular, tidak ada solusi unik." };
+            }
+
+            for (let i = k + 1; i < n; i++) {
+                const factor = aug[i][k] / aug[k][k];
+                steps += `<p class="text-gray-300">Operasi: <span class="font-mono">R${i+1} &rarr; R${i+1} - (${formatNumber(factor)}) * R${k+1}</span></p>`;
+                for (let j = k; j < n + 1; j++) {
+                    aug[i][j] -= factor * aug[k][j];
+                }
+                 steps += formatMatrixHTML(aug, `Hasil setelah operasi pada R${i+1}`);
+            }
+        }
+        steps += '<h3 class="text-xl font-semibold text-white mt-4">Hasil Eselon Baris (Eliminasi Maju)</h3>';
+        steps += formatMatrixHTML(aug, "Matriks Augmented [U|y]");
+
+        // Substitusi Mundur
+        steps += '<h3 class="text-xl font-semibold text-white mt-4">Substitusi Mundur</h3>';
+        const x = Array(n).fill(0);
+        for (let i = n - 1; i >= 0; i--) {
+            let sum = 0;
+            for (let j = i + 1; j < n; j++) {
+                sum += aug[i][j] * x[j];
+            }
+            x[i] = (aug[i][n] - sum) / aug[i][i];
+            steps += `<p>Menghitung x${i+1}: <span class="font-mono">(${formatNumber(aug[i][n])} - ${formatNumber(sum)}) / ${formatNumber(aug[i][i])} = ${formatNumber(x[i])}</span></p>`;
+        }
+        
+        return { solution: x, steps };
+    };
+
+    // 2. Eliminasi Gauss-Jordan
+    const gaussJordanElimination = (A, b) => {
+        const n = A.length;
+        let steps = '';
+        const aug = A.map((row, i) => [...row, b[i]]);
+        steps += formatMatrixHTML(aug, "Matriks Augmented Awal [A|b]");
+
+        for (let k = 0; k < n; k++) {
+            // Pivoting
+            let max_row = k;
+            for (let i = k + 1; i < n; i++) {
+                if (Math.abs(aug[i][k]) > Math.abs(aug[max_row][k])) max_row = i;
+            }
+            [aug[k], aug[max_row]] = [aug[max_row], aug[k]];
+             if (max_row !== k) {
+                steps += `<p class="text-yellow-300">Pivoting: Tukar Baris R${k+1} dan R${max_row+1}</p>`;
+                steps += formatMatrixHTML(aug, "Setelah Pivoting");
+            }
+             if (Math.abs(aug[k][k]) < 1e-9) {
+                 return { solution: null, steps, message: "Matriks singular, tidak ada solusi unik." };
+            }
+
+            // Normalisasi baris pivot
+            const pivot = aug[k][k];
+            steps += `<p>Normalisasi: <span class="font-mono">R${k+1} &rarr; R${k+1} / ${formatNumber(pivot)}</span></p>`;
+            for (let j = k; j < n + 1; j++) {
+                aug[k][j] /= pivot;
+            }
+            steps += formatMatrixHTML(aug, `Hasil setelah normalisasi R${k+1}`);
+
+            // Eliminasi kolom
+            for (let i = 0; i < n; i++) {
+                if (i !== k) {
+                    const factor = aug[i][k];
+                    steps += `<p>Eliminasi: <span class="font-mono">R${i+1} &rarr; R${i+1} - (${formatNumber(factor)}) * R${k+1}</span></p>`;
+                    for (let j = k; j < n + 1; j++) {
+                        aug[i][j] -= factor * aug[k][j];
+                    }
+                    steps += formatMatrixHTML(aug, `Hasil setelah eliminasi pada R${i+1}`);
+                }
+            }
+        }
+        
+        steps += '<h3 class="text-xl font-semibold text-white mt-4">Bentuk Eselon Baris Tereduksi</h3>';
+        steps += formatMatrixHTML(aug, "Matriks Akhir [I|x]");
+        const x = aug.map(row => row[n]);
+        return { solution: x, steps };
+    };
+
+    // 3. Dekomposisi LU
+    const luDecomposition = (A, b) => {
+        const n = A.length;
+        let steps = '';
+        const L = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)));
+        const U = JSON.parse(JSON.stringify(A));
+        
+        steps += formatMatrixHTML(A, "Matriks Awal [A]");
+
+        // Proses Dekomposisi
+        for (let k = 0; k < n; k++) {
+            if (Math.abs(U[k][k]) < 1e-9) {
+                 return { solution: null, steps, message: "Matriks singular, dekomposisi LU gagal." };
+            }
+            for (let i = k + 1; i < n; i++) {
+                const factor = U[i][k] / U[k][k];
+                L[i][k] = factor;
+                steps += `<p>Menghitung L[${i+1}][${k+1}] = ${formatNumber(factor)}. Operasi U: <span class="font-mono">R${i+1} &rarr; R${i+1} - (${formatNumber(factor)}) * R${k+1}</span></p>`;
+                for (let j = k; j < n; j++) {
+                    U[i][j] -= factor * U[k][j];
+                }
+            }
+        }
+        
+        steps += '<h3 class="text-xl font-semibold text-white mt-4">Hasil Dekomposisi A = LU</h3>';
+        steps += formatLUMatricesHTML(L, U);
+
+        // Substitusi maju: Selesaikan Ly = b
+        steps += '<h3 class="text-xl font-semibold text-white mt-4">Substitusi Maju (Selesaikan Ly = b)</h3>';
+        const y = Array(n).fill(0);
+        for (let i = 0; i < n; i++) {
+            let sum = 0;
+            for (let j = 0; j < i; j++) {
+                sum += L[i][j] * y[j];
+            }
+            y[i] = b[i] - sum;
+            steps += `<p>Menghitung y${i+1}: <span class="font-mono">${formatNumber(b[i])} - ${formatNumber(sum)} = ${formatNumber(y[i])}</span></p>`;
+        }
+
+        // Substitusi mundur: Selesaikan Ux = y
+        steps += '<h3 class="text-xl font-semibold text-white mt-4">Substitusi Mundur (Selesaikan Ux = y)</h3>';
+        const x = Array(n).fill(0);
+        for (let i = n - 1; i >= 0; i--) {
+            let sum = 0;
+            for (let j = i + 1; j < n; j++) {
+                sum += U[i][j] * x[j];
+            }
+            x[i] = (y[i] - sum) / U[i][i];
+            steps += `<p>Menghitung x${i+1}: <span class="font-mono">(${formatNumber(y[i])} - ${formatNumber(sum)}) / ${formatNumber(U[i][i])} = ${formatNumber(x[i])}</span></p>`;
+        }
+
+        return { solution: x, steps };
+    };
+    
+    // Event Listeners
+    sizeSelector.addEventListener('change', generateMatrixInputs);
+    calculateBtn.addEventListener('click', solve);
+    fillRandomBtn.addEventListener('click', fillRandomInputs);
+    clearBtn.addEventListener('click', () => {
+        generateMatrixInputs();
+        outputDiv.innerHTML = '<p>Silakan isi matriks dan klik "Hitung" untuk melihat hasilnya di sini.</p>';
+    });
+
+    // Inisialisasi awal
+    generateMatrixInputs();
+});
+</script>
+
+</body>
+</html>
+
